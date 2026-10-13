@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>ITCalider | Plataforma Académica</title>
+  <script>
+    const accessParams = new URLSearchParams(window.location.search);
+    const accessRole = accessParams.get("role");
+    if (!["student", "teacher"].includes(accessRole) || !accessParams.get("givenName")?.trim() || !accessParams.get("surname")?.trim()) {
+      window.location.replace("login.html");
+    }
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17233d;
+      --muted: #778198;
+      --line: #e9edf4;
+      --paper: #fff;
+      --canvas: #f5f7fb;
+      --blue: #4568e8;
+      --blue-dark: #3151c8;
+      --blue-soft: #edf1ff;
+      --mint: #e8f7f1;
+      --mint-ink: #288466;
+      --amber: #fff4df;
+      --amber-ink: #b17b24;
+      --rose: #fff0ef;
+      --rose-ink: #ca605b;
+      --shadow: 0 12px 34px rgba(32, 48, 86, .055);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--canvas); min-height: 100vh; }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .app { min-height: 100vh; }
+    .logout-button { background: transparent; border: 0; border-radius: 8px; color: #778198; display: block; font-size: 10px; margin-top: 12px; padding: 8px; text-align: left; text-decoration: none; width: 100%; }
+    .logout-button:hover { background: #fff0ef; color: #bd5550; }
+    .sidebar {
+      background: var(--paper); border-right: 1px solid var(--line); display: flex;
+      flex-direction: column; left: 0; padding: 26px 18px 20px; position: fixed;
+      top: 0; bottom: 0; width: 252px; z-index: 5;
+    }
+    .brand { align-items: center; display: flex; gap: 11px; padding: 0 10px 31px; }
+    .brand-mark {
+      align-items: center; background: linear-gradient(145deg,#6685ff,#3d5dd8); border-radius: 13px;
+      box-shadow: 0 7px 15px #4568e833; color: #fff; display: flex; font-size: 17px;
+      font-weight: 800; height: 40px; justify-content: center; width: 40px;
+    }
+    .brand-name { font-size: 16px; font-weight: 760; letter-spacing: -.35px; }
+    .brand-sub { color: var(--muted); font-size: 11px; margin-top: 3px; }
+    .nav-label { color: #a0a8b8; font-size: 10px; font-weight: 750; letter-spacing: 1.15px; padding: 0 12px 10px; text-transform: uppercase; }
+    .nav { display: grid; gap: 5px; }
+    .nav-button {
+      align-items: center; background: transparent; border: 0; border-radius: 10px; color: #69758e;
+      display: flex; font-size: 13px; font-weight: 570; gap: 13px; padding: 11px 12px; text-align: left;
+      transition: .16s ease; width: 100%;
+    }
+    .nav-button:hover { background: #f6f7fb; color: var(--ink); }
+    .nav-button.active { background: var(--blue-soft); color: var(--blue); font-weight: 690; }
+    .nav-icon { align-items: center; display: inline-flex; font-size: 17px; height: 20px; justify-content: center; width: 20px; }
+    .nav-count { background: #fff; border-radius: 20px; color: var(--blue); font-size: 10px; margin-left: auto; padding: 3px 7px; }
+    .sidebar-spacer { flex: 1; }
+    .help-card { background: #f7f8fc; border: 1px solid #eef0f5; border-radius: 13px; margin: 15px 2px 18px; padding: 14px; }
+    .help-card strong { display: block; font-size: 12px; margin-bottom: 5px; }
+    .help-card p { color: var(--muted); font-size: 11px; line-height: 1.55; margin: 0; }
+    .profile-mini { align-items: center; border-top: 1px solid var(--line); display: flex; gap: 10px; padding: 17px 4px 0; }
+    .avatar { align-items: center; background: #e9edff; border-radius: 50%; color: #5268ce; display: inline-flex; flex: 0 0 auto; font-size: 11px; font-weight: 750; height: 35px; justify-content: center; width: 35px; }
+    .profile-mini strong { display: block; font-size: 12px; }
+    .profile-mini small { color: var(--muted); display: block; font-size: 10px; margin-top: 3px; }
+    main { margin-left: 252px; min-height: 100vh; }
+    .topbar {
+      align-items: center; background: rgba(255,255,255,.84); border-bottom: 1px solid var(--line);
+      display: flex; height: 72px; justify-content: space-between; padding: 0 clamp(22px,4vw,54px);
+      position: sticky; top: 0; z-index: 4; backdrop-filter: blur(12px);
+    }
+    .crumb { color: var(--muted); font-size: 12px; }
+    .crumb strong { color: var(--ink); font-weight: 650; }
+    .top-actions { align-items: center; display: flex; gap: 12px; }
+    .icon-button { background: transparent; border: 0; color: #68748c; font-size: 19px; position: relative; }
+    .notification-dot { background: #f47a70; border: 2px solid white; border-radius: 50%; height: 8px; position: absolute; right: -2px; top: 0; width: 8px; }
+    .content { margin: 0 auto; max-width: 1320px; padding: 35px clamp(22px,4vw,54px) 55px; }
+    .welcome-row { align-items: flex-end; display: flex; justify-content: space-between; margin-bottom: 25px; }
+    .eyebrow { color: var(--blue); font-size: 11px; font-weight: 750; letter-spacing: .75px; margin-bottom: 9px; text-transform: uppercase; }
+    h1 { font-size: clamp(25px,3vw,32px); letter-spacing: -1.1px; line-height: 1.12; margin: 0; }
+    .welcome-row p { color: var(--muted); font-size: 13px; margin: 9px 0 0; }
+    .date-chip { background: white; border: 1px solid var(--line); border-radius: 10px; color: #536079; font-size: 11px; padding: 10px 13px; white-space: nowrap; }
+    .notice-banner { align-items: center; background: #edf2ff; border: 1px solid #e4eaff; border-radius: 13px; display: flex; gap: 13px; margin-bottom: 23px; padding: 14px 17px; }
+    .notice-symbol { align-items: center; background: white; border-radius: 10px; color: var(--blue); display: flex; flex: 0 0 auto; font-size: 16px; height: 36px; justify-content: center; width: 36px; }
+    .notice-copy { flex: 1; }
+    .notice-copy strong { display: block; font-size: 12px; margin-bottom: 4px; }
+    .notice-copy span { color: #697694; font-size: 11px; }
+    .text-button { background: none; border: 0; color: var(--blue); font-size: 11px; font-weight: 700; padding: 8px; white-space: nowrap; }
+    .stats { display: grid; gap: 15px; grid-template-columns: repeat(4,minmax(0,1fr)); margin-bottom: 22px; }
+    .stat-card,.panel { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+    .stat-card { min-height: 120px; padding: 18px; }
+    .stat-top { align-items: center; color: var(--muted); display: flex; font-size: 11px; justify-content: space-between; }
+    .stat-icon { align-items: center; background: var(--blue-soft); border-radius: 9px; color: var(--blue); display: inline-flex; font-size: 15px; height: 31px; justify-content: center; width: 31px; }
+    .stat-card:nth-child(2) .stat-icon { background: var(--mint); color: var(--mint-ink); }
+    .stat-card:nth-child(3) .stat-icon { background: var(--amber); color: var(--amber-ink); }
+    .stat-card:nth-child(4) .stat-icon { background: var(--rose); color: var(--rose-ink); }
+    .stat-value { font-size: 25px; font-weight: 760; letter-spacing: -.8px; margin-top: 11px; }
+    .stat-foot { color: var(--muted); font-size: 10px; margin-top: 4px; }
+    .dashboard-grid { align-items: start; display: grid; gap: 18px; grid-template-columns: minmax(0,1.55fr) minmax(275px,1fr); }
+    .panel { overflow: hidden; }
+    .panel + .panel { margin-top: 18px; }
+    .panel-head { align-items: center; display: flex; justify-content: space-between; padding: 18px 20px 15px; }
+    .panel-title { font-size: 13px; font-weight: 730; }
+    .panel-subtitle { color: var(--muted); font-size: 10px; margin-top: 4px; }
+    .link-button { background: none; border: 0; color: var(--blue); font-size: 10px; font-weight: 700; padding: 5px; }
+    .schedule-list { padding: 0 20px 9px; }
+    .class-row { align-items: stretch; display: grid; gap: 12px; grid-template-columns: 60px 3px minmax(0,1fr) auto; min-height: 73px; padding: 10px 0; }
+    .class-time { color: #68758e; font-size: 10px; padding-top: 5px; }
+    .class-stripe { background: #6f86f2; border-radius: 5px; }
+    .class-row:nth-child(2) .class-stripe { background: #4eb397; }
+    .class-row:nth-child(3) .class-stripe { background: #efa84f; }
+    .class-row:nth-child(4) .class-stripe { background: #a17be5; }
+    .class-info strong { display: block; font-size: 11px; font-weight: 680; margin: 3px 0 5px; }
+    .class-info span { color: var(--muted); font-size: 10px; }
+    .room-tag { align-self: start; background: #f4f6fa; border-radius: 6px; color: #707c92; font-size: 9px; padding: 5px 7px; }
+    .activity-list { padding: 0 20px 8px; }
+    .activity-row { align-items: flex-start; display: flex; gap: 11px; padding: 11px 0; }
+    .activity-date { align-items: center; background: #f4f6fb; border-radius: 9px; color: #67738c; display: flex; flex-direction: column; flex: 0 0 39px; font-size: 9px; height: 42px; justify-content: center; line-height: 1.4; }
+    .activity-date strong { color: var(--ink); font-size: 15px; }
+    .activity-copy { flex: 1; padding-top: 2px; }
+    .activity-copy strong { display: block; font-size: 10px; font-weight: 670; margin-bottom: 4px; }
+    .activity-copy span { color: var(--muted); font-size: 9px; }
+    .activity-type { color: var(--amber-ink); font-size: 9px; padding-top: 3px; }
+    .notice-list { padding: 0 20px 7px; }
+    .notice-item { border-bottom: 1px solid #f0f2f6; display: flex; gap: 10px; padding: 12px 0; }
+    .notice-item:last-child { border-bottom: 0; }
+    .notice-bullet { background: #fff1df; border-radius: 8px; color: #c08732; flex: 0 0 31px; font-size: 13px; height: 31px; line-height: 31px; text-align: center; }
+    .notice-item:nth-child(2) .notice-bullet { background: #edf1ff; color: var(--blue); }
+    .notice-item:nth-child(3) .notice-bullet { background: #e8f7f1; color: var(--mint-ink); }
+    .notice-item strong { display: block; font-size: 10px; margin: 1px 0 4px; }
+    .notice-item p { color: var(--muted); font-size: 9px; line-height: 1.45; margin: 0; }
+    .page-panel { padding: 20px; }
+    .page-panel .panel-head { padding: 0 0 15px; }
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; min-width: 560px; width: 100%; }
+    th { color: #8a93a5; font-size: 9px; font-weight: 700; letter-spacing: .45px; padding: 11px 10px; text-align: left; text-transform: uppercase; }
+    td { border-top: 1px solid #f0f2f6; font-size: 11px; padding: 13px 10px; }
+    .grade { color: #283756; font-size: 12px; font-weight: 740; }
+    .badge { background: var(--mint); border-radius: 20px; color: var(--mint-ink); font-size: 9px; padding: 5px 8px; white-space: nowrap; }
+    .badge.pending { background: var(--amber); color: var(--amber-ink); }
+    .small-action { background: white; border: 1px solid var(--line); border-radius: 7px; color: #64718a; font-size: 9px; padding: 6px 8px; }
+    .notice-feed { display: grid; gap: 12px; }
+    .feed-card { border: 1px solid var(--line); border-radius: 11px; padding: 15px; }
+    .feed-meta { align-items: center; color: var(--muted); display: flex; font-size: 9px; gap: 8px; margin-bottom: 8px; }
+    .feed-card h3 { font-size: 12px; margin: 0 0 6px; }
+    .feed-card p { color: #707b90; font-size: 10px; line-height: 1.6; margin: 0; }
+    .feed-tag { background: var(--blue-soft); border-radius: 15px; color: var(--blue); font-size: 9px; padding: 4px 7px; }
+    .forum-list { display: grid; gap: 11px; }
+    .forum-card { border: 1px solid var(--line); border-radius: 11px; padding: 15px; }
+    .forum-card strong { font-size: 11px; }
+    .forum-card p { color: #707b90; font-size: 10px; line-height: 1.5; margin: 7px 0 9px; }
+    .forum-card small { color: var(--muted); font-size: 9px; }
+    .button-primary { background: var(--blue); border: 0; border-radius: 8px; color: white; font-size: 10px; font-weight: 680; padding: 10px 13px; }
+    .button-primary:hover { background: var(--blue-dark); }
+    .toolbar { align-items: center; display: flex; gap: 8px; }
+    .search { border: 1px solid var(--line); border-radius: 8px; font-size: 10px; outline: none; padding: 9px 11px; width: 200px; }
+    .search:focus, textarea:focus, input:focus { border-color: #9bacfa; box-shadow: 0 0 0 3px #4568e81a; }
+    .teacher-note { background: #f4f6fb; border-radius: 9px; color: #748096; font-size: 10px; line-height: 1.55; margin-bottom: 15px; padding: 11px 13px; }
+    .empty { color: var(--muted); font-size: 11px; padding: 22px 0; text-align: center; }
+    .toast { background: #202d48; border-radius: 9px; bottom: 22px; box-shadow: 0 10px 25px #18244038; color: white; font-size: 11px; opacity: 0; padding: 12px 16px; pointer-events: none; position: fixed; right: 24px; transform: translateY(8px); transition: .2s; z-index: 20; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .modal-backdrop { align-items: center; background: #111a2b77; display: flex; inset: 0; justify-content: center; padding: 20px; position: fixed; z-index: 15; }
+    .modal { background: white; border-radius: 15px; box-shadow: 0 20px 60px #101a2b33; max-width: 440px; padding: 23px; width: 100%; }
+    .modal h2 { font-size: 17px; margin: 0 0 7px; }
+    .modal p { color: var(--muted); font-size: 11px; line-height: 1.55; margin: 0 0 16px; }
+    .modal label { color: #65718a; display: block; font-size: 10px; font-weight: 650; margin: 11px 0 6px; }
+    .modal input,.modal textarea,.modal select { border: 1px solid var(--line); border-radius: 8px; font-size: 11px; outline: none; padding: 10px; width: 100%; }
+    .modal textarea { min-height: 84px; resize: vertical; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 17px; }
+    .button-secondary { background: #f5f6fa; border: 0; border-radius: 8px; color: #65718a; font-size: 10px; padding: 10px 13px; }
+    .mobile-menu { background: none; border: 0; color: var(--ink); display: none; font-size: 20px; padding: 3px 8px 3px 0; }
+    @media (max-width: 1050px) {
+      .sidebar { width: 218px; }
+      main { margin-left: 218px; }
+      .stats { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .dashboard-grid { grid-template-columns: minmax(0,1.25fr) minmax(250px,1fr); }
+    }
+    @media (max-width: 760px) {
+      .sidebar { box-shadow: 12px 0 35px #17233d13; transform: translateX(-105%); transition: transform .2s; width: 260px; }
+      .sidebar.open { transform: translateX(0); }
+      main { margin-left: 0; }
+      .mobile-menu { display: inline-block; }
+      .topbar { height: 62px; padding: 0 18px; }
+      .content { padding: 25px 18px 40px; }
+      .dashboard-grid { grid-template-columns: 1fr; }
+      .welcome-row { align-items: flex-start; gap: 12px; }
+      .date-chip { font-size: 9px; padding: 8px; }
+    }
+    @media (max-width: 480px) {
+      .stats { gap: 9px; }
+      .stat-card { min-height: 108px; padding: 13px; }
+      .stat-card .stat-top { align-items: flex-start; gap: 5px; }
+      .stat-top > span:first-child { line-height: 1.4; }
+      .stat-value { font-size: 22px; }
+      .welcome-row { flex-direction: column; }
+      .notice-banner { align-items: flex-start; }
+      .notice-banner .text-button { font-size: 9px; padding: 2px; }
+      .search { width: 130px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">IT</div>
+        <div><div class="brand-name">ITCalider</div><div class="brand-sub">Instituto Técnico del Norte</div></div>
+      </div>
+      <div class="nav-label">Espacio académico</div>
+      <nav class="nav" id="navigation" aria-label="Navegación principal">
+        <button class="nav-button active" data-page="inicio"><span class="nav-icon">⌂</span>Inicio</button>
+        <button class="nav-button" data-page="horario"><span class="nav-icon">▦</span>Mi horario</button>
+        <button class="nav-button" data-page="calificaciones"><span class="nav-icon">▤</span>Calificaciones</button>
+        <button class="nav-button" data-page="avisos"><span class="nav-icon">♧</span>Avisos <span class="nav-count">3</span></button>
+        <button class="nav-button" data-page="comunidad"><span class="nav-icon">☏</span>Comunidad</button>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <div class="help-card"><strong>Un espacio para ti</strong><p>Consulta tu información académica y mantente al día con las novedades de tus asignaturas.</p></div>
+      <div class="profile-mini"><div class="avatar" id="sidebarAvatar">CM</div><div><strong id="sidebarName">Camila Muñoz</strong><small id="sidebarRole">Estudiante · 3° B</small></div></div>
+      <a class="logout-button" href="login.html">↪ &nbsp; Cerrar sesión</a>
+    </aside>
+    <main>
+      <header class="topbar">
+        <div class="crumb"><button class="mobile-menu" id="menuButton" aria-label="Abrir menú">☰</button>ITCalider <span aria-hidden="true"> / </span> <strong id="breadcrumb">Inicio</strong></div>
+        <div class="top-actions">
+          <button class="icon-button" id="notificationButton" aria-label="Marcar avisos como leídos">♧<span class="notification-dot" id="notificationDot"></span></button>
+          <div class="avatar" id="topAvatar">CM</div>
+        </div>
+      </header>
+      <section class="content" id="content" aria-live="polite"></section>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <div id="modalRoot"></div>
+  <script>
+    const classes = [
+      { time: "08:30 — 10:00", name: "Matemática Aplicada", teacher: "Prof. Sebastián Rojas", room: "Sala 204" },
+      { time: "10:15 — 11:45", name: "Fundamentos de Programación", teacher: "Prof. Daniela Soto", room: "Lab. 3" },
+      { time: "12:00 — 13:30", name: "Comunicación Efectiva", teacher: "Prof. Andrés Molina", room: "Sala 108" },
+      { time: "14:15 — 15:45", name: "Sistemas y Redes", teacher: "Prof. Paula Reyes", room: "Lab. 1" }
+    ];
+    const grades = [
+      { subject: "Matemática Aplicada", item: "Control 1 · Funciones", date: "08 oct 2026", grade: "6,2", status: "Publicada" },
+      { subject: "Fundamentos de Programación", item: "Proyecto · Etapa 1", date: "06 oct 2026", grade: "5,8", status: "Publicada" },
+      { subject: "Comunicación Efectiva", item: "Presentación oral", date: "02 oct 2026", grade: "6,5", status: "Publicada" },
+      { subject: "Sistemas y Redes", item: "Evaluación práctica", date: "Por publicar", grade: "—", status: "Pendiente" }
+    ];
+    const notices = [
+      { tag: "Cambio de sala", date: "Hoy · 08:05", title: "Matemática Aplicada — sala 204", body: "La clase de hoy se realizará en la sala 204. El horario se mantiene sin cambios." },
+      { tag: "Información", date: "Ayer · 16:30", title: "Semana de actividades técnicas", body: "Ya está disponible el calendario de actividades y charlas de la próxima semana." },
+      { tag: "Evaluación", date: "10 oct · 12:15", title: "Prueba de Sistemas y Redes", body: "La evaluación práctica está programada para el jueves 15 de octubre. Revisen los contenidos con su docente." }
+    ];
+    const forums = [
+      { title: "Dudas sobre el proyecto de programación", author: "Daniela Soto · Docente", replies: 8, text: "Dejen aquí sus preguntas sobre la entrega de la primera etapa. Responderé durante la jornada." },
+      { title: "Material de repaso: funciones", author: "Sebastián Rojas · Docente", replies: 5, text: "Espacio para compartir preguntas y recursos de preparación para el próximo control." }
+    ];
+    const params = new URLSearchParams(window.location.search);
+    const state = {
+      page: "inicio",
+      role: params.get("role"),
+      givenName: params.get("givenName").trim(),
+      surname: params.get("surname").trim(),
+      className: params.get("className")?.trim() || "3° B",
+      subject: params.get("subject")?.trim() || "Matemática",
+      noticesRead: false,
+      reviews: [],
+      forumPosts: []
+    };
+    const pageNames = { inicio: "Inicio", horario: "Mi horario", calificaciones: "Calificaciones", avisos: "Avisos", comunidad: "Comunidad" };
+    const content = document.getElementById("content");
+    const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+    const roleName = () => state.role === "teacher" ? `Docente · ${state.subject}` : `Estudiante · ${state.className}`;
+    const fullName = () => `${state.givenName} ${state.surname}`.trim();
+    const initials = () => `${state.givenName.trim().charAt(0)}${state.surname.trim().charAt(0)}`.toLocaleUpperCase("es");
+    function render() {
+      document.getElementById("breadcrumb").textContent = pageNames[state.page];
+      document.querySelectorAll(".nav-button").forEach(button => button.classList.toggle("active", button.dataset.page === state.page));
+      document.getElementById("sidebarName").textContent = fullName();
+      document.getElementById("sidebarRole").textContent = roleName();
+      document.getElementById("sidebarAvatar").textContent = initials();
+      document.getElementById("topAvatar").textContent = initials();
+      document.getElementById("notificationDot").hidden = state.noticesRead;
+      if (state.page === "inicio") renderHome();
+      else if (state.page === "horario") renderSchedule();
+      else if (state.page === "calificaciones") renderGrades();
+      else if (state.page === "avisos") renderNotices();
+      else renderCommunity();
+      document.getElementById("sidebar").classList.remove("open");
+    }
+    function welcome(title, subtitle, eyebrow) {
+      return `<div class="welcome-row"><div><div class="eyebrow">${escapeHtml(eyebrow)}</div><h1>${escapeHtml(title)}</h1><p>${escapeHtml(subtitle)}</p></div><div class="date-chip">◷ &nbsp; Lunes, 12 de octubre</div></div>`;
+    }
+    function classMarkup(items = classes) {
+      if (!items.length) return `<div class="empty">No hay clases que coincidan con tu búsqueda.</div>`;
+      return items.map(item => `<div class="class-row"><div class="class-time">${escapeHtml(item.time)}</div><div class="class-stripe"></div><div class="class-info"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.teacher)}</span></div><span class="room-tag">${escapeHtml(item.room)}</span></div>`).join("");
+    }
+    function noticeMarkup(item) {
+      return `<article class="notice-item"><div class="notice-bullet">↗</div><div><strong>${escapeHtml(item.title)}</strong><p>${escapeHtml(item.body)} · ${escapeHtml(item.date)}</p></div></article>`;
+    }
+    function renderHome() {
+      const teacher = state.role === "teacher";
+      const noticeBanner = state.noticesRead ? "" : `<div class="notice-banner"><div class="notice-symbol">♧</div><div class="notice-copy"><strong>Tienes avisos nuevos</strong><span>Revisa la información reciente de tus asignaturas.</span></div><button class="text-button" data-action="go-notices">Ver avisos →</button></div>`;
+      if (teacher) {
+        content.innerHTML = `${welcome(`Hola, ${state.givenName} 👋`, "Aquí tienes un resumen de tus asignaturas y actividad reciente.", "Panel docente")}${noticeBanner}<div class="stats"><div class="stat-card"><div class="stat-top"><span>Asignaturas</span><span class="stat-icon">▦</span></div><div class="stat-value">4</div><div class="stat-foot">a tu cargo este semestre</div></div><div class="stat-card"><div class="stat-top"><span>Estudiantes</span><span class="stat-icon">♙</span></div><div class="stat-value">86</div><div class="stat-foot">en tus secciones</div></div><div class="stat-card"><div class="stat-top"><span>Notas pendientes</span><span class="stat-icon">▤</span></div><div class="stat-value">12</div><div class="stat-foot">por registrar o publicar</div></div><div class="stat-card"><div class="stat-top"><span>Avisos publicados</span><span class="stat-icon">♧</span></div><div class="stat-value">5</div><div class="stat-foot">durante este mes</div></div></div><div class="dashboard-grid"><div><section class="panel"><div class="panel-head"><div><div class="panel-title">Tus clases de hoy</div><div class="panel-subtitle">Lunes, 12 de octubre</div></div><button class="link-button" data-page-link="horario">Ver horario →</button></div><div class="schedule-list">${classMarkup()}</div></section><section class="panel"><div class="panel-head"><div><div class="panel-title">Acciones rápidas</div><div class="panel-subtitle">Gestiona tu comunicación académica</div></div></div><div class="activity-list"><button class="button-primary" data-action="new-notice">＋ Publicar aviso</button> <button class="small-action" data-page-link="calificaciones">Registrar calificaciones</button></div></section></div><div><section class="panel"><div class="panel-head"><div><div class="panel-title">Avisos recientes</div><div class="panel-subtitle">Información para tus cursos</div></div><button class="link-button" data-page-link="avisos">Ver todos</button></div><div class="notice-list">${notices.slice(0,2).map(noticeMarkup).join("")}</div></section></div></div>`;
+        return;
+      }
+      content.innerHTML = `${welcome(`Hola, ${state.givenName} 👋`, "Aquí tienes un resumen de tu actividad académica.", "Tu espacio académico")}${noticeBanner}<div class="stats"><div class="stat-card"><div class="stat-top"><span>Asignaturas</span><span class="stat-icon">▦</span></div><div class="stat-value">6</div><div class="stat-foot">en el semestre actual</div></div><div class="stat-card"><div class="stat-top"><span>Promedio actual</span><span class="stat-icon">↗</span></div><div class="stat-value">6,2</div><div class="stat-foot">según notas publicadas</div></div><div class="stat-card"><div class="stat-top"><span>Próxima evaluación</span><span class="stat-icon">◇</span></div><div class="stat-value">15 <span style="font-size:12px;font-weight:600">oct</span></div><div class="stat-foot">Sistemas y Redes</div></div><div class="stat-card"><div class="stat-top"><span>Avisos nuevos</span><span class="stat-icon">♧</span></div><div class="stat-value">${state.noticesRead ? "0" : "3"}</div><div class="stat-foot">de tus asignaturas</div></div></div><div class="dashboard-grid"><div><section class="panel"><div class="panel-head"><div><div class="panel-title">Mi jornada de hoy</div><div class="panel-subtitle">Lunes, 12 de octubre · 4 clases</div></div><button class="link-button" data-page-link="horario">Ver horario →</button></div><div class="schedule-list">${classMarkup()}</div></section><section class="panel"><div class="panel-head"><div><div class="panel-title">Próximas actividades</div><div class="panel-subtitle">No pierdas de vista tus fechas</div></div><button class="link-button" data-page-link="calificaciones">Ver notas</button></div><div class="activity-list"><div class="activity-row"><div class="activity-date"><span>OCT</span><strong>15</strong></div><div class="activity-copy"><strong>Evaluación práctica</strong><span>Sistemas y Redes · 10:15</span></div><span class="activity-type">Prueba</span></div><div class="activity-row"><div class="activity-date"><span>OCT</span><strong>19</strong></div><div class="activity-copy"><strong>Entrega etapa 2</strong><span>Fundamentos de Programación</span></div><span class="activity-type">Entrega</span></div></div></section></div><div><section class="panel"><div class="panel-head"><div><div class="panel-title">Avisos recientes</div><div class="panel-subtitle">De tus asignaturas</div></div><button class="link-button" data-page-link="avisos">Ver todos</button></div><div class="notice-list">${notices.slice(0,3).map(noticeMarkup).join("")}</div></section><section class="panel"><div class="panel-head"><div><div class="panel-title">Últimas calificaciones</div><div class="panel-subtitle">Tu progreso académico</div></div><button class="link-button" data-page-link="calificaciones">Ver todas</button></div><div class="activity-list"><div class="activity-row"><div class="stat-icon">6,2</div><div class="activity-copy"><strong>Matemática Aplicada</strong><span>Control 1 · Funciones</span></div><span class="badge">Publicada</span></div><div class="activity-row"><div class="stat-icon">5,8</div><div class="activity-copy"><strong>Fundamentos de Programación</strong><span>Proyecto · Etapa 1</span></div><span class="badge">Publicada</span></div></div></section></div></div>`;
+    }
+    function renderSchedule() {
+      const teacher = state.role === "teacher";
+      content.innerHTML = `${welcome(teacher ? "Horario docente" : "Mi horario", teacher ? "Revisa las clases y secciones de tu jornada." : "Consulta tus clases y salas de esta semana.", teacher ? "Planificación" : "Organiza tu semana")}<div class="toolbar" style="justify-content:space-between;margin-bottom:14px"><span class="panel-subtitle">Lunes, 12 de octubre de 2026</span><button class="small-action" data-action="schedule-week">‹ &nbsp; Esta semana &nbsp; ›</button></div><section class="panel"><div class="panel-head"><div><div class="panel-title">Lunes</div><div class="panel-subtitle">4 clases programadas</div></div></div><div class="schedule-list">${classMarkup()}</div></section><p class="panel-subtitle" style="margin-top:13px">Los horarios mostrados son datos de demostración y no corresponden a información oficial.</p>`;
+    }
+    function gradeRows(items = grades) {
+      if (!items.length) return `<tr><td colspan="6" class="empty">No se encontraron calificaciones.</td></tr>`;
+      return items.map((item, index) => `<tr><td>${escapeHtml(item.subject)}</td><td>${escapeHtml(item.item)}</td><td>${escapeHtml(item.date)}</td><td class="grade">${escapeHtml(item.grade)}</td><td><span class="badge ${item.status === "Pendiente" ? "pending" : ""}">${escapeHtml(item.status)}</span></td><td>${state.role === "teacher" ? `<button class="small-action" data-action="edit-grade" data-index="${index}">Registrar nota</button>` : `<button class="small-action" data-action="request-review" data-index="${index}">Consultar</button>`}</td></tr>`).join("");
+    }
+    function renderGrades() {
+      const teacher = state.role === "teacher";
+      content.innerHTML = `${welcome(teacher ? "Registro de calificaciones" : "Mis calificaciones", teacher ? "Revisa y registra las notas de tus secciones." : "Consulta las calificaciones que han sido registradas por tus docentes.", teacher ? "Panel docente" : "Seguimiento académico")}<section class="panel page-panel"><div class="panel-head"><div><div class="panel-title">${teacher ? "Calificaciones de Matemática Aplicada" : "Calificaciones recientes"}</div><div class="panel-subtitle">${teacher ? "Sección 3° B · 24 estudiantes" : "Semestre actual · Información de demostración"}</div></div>${teacher ? `<button class="button-primary" data-action="new-grade">＋ Registrar nota</button>` : ""}</div>${teacher ? `<div class="teacher-note">Vista conceptual para docentes. La publicación real de notas requiere definir permisos, validaciones y conexión con los sistemas institucionales.</div>` : ""}<div class="table-wrap"><table><thead><tr><th>Asignatura</th><th>Evaluación</th><th>Fecha</th><th>Nota</th><th>Estado</th><th>Acción</th></tr></thead><tbody>${gradeRows()}</tbody></table></div></section>${!teacher && state.reviews.length ? `<section class="panel page-panel" style="margin-top:16px"><div class="panel-head"><div><div class="panel-title">Mis observaciones</div><div class="panel-subtitle">Consultas registradas en este prototipo</div></div></div>${state.reviews.map(item => `<div class="feed-card" style="margin-bottom:9px"><h3>${escapeHtml(item.subject)}</h3><p>${escapeHtml(item.text)}</p><div class="feed-meta" style="margin:8px 0 0">Estado: recibida en prototipo · ${escapeHtml(item.date)}</div></div>`).join("")}</section>` : ""}`;
+    }
+    function renderNotices() {
+      const items = state.role === "teacher" ? [...notices, ...state.teacherNotices || []] : notices;
+      content.innerHTML = `${welcome(state.role === "teacher" ? "Avisos de tus cursos" : "Avisos y novedades", state.role === "teacher" ? "Información que has compartido con tus estudiantes." : "Información importante de tus asignaturas, reunida en un solo lugar.", "Comunicación")}<section class="panel page-panel"><div class="panel-head"><div><div class="panel-title">Publicaciones recientes</div><div class="panel-subtitle">${items.length} avisos disponibles</div></div>${state.role === "teacher" ? `<button class="button-primary" data-action="new-notice">＋ Publicar aviso</button>` : ""}</div><div class="notice-feed">${items.map(item => `<article class="feed-card"><div class="feed-meta"><span class="feed-tag">${escapeHtml(item.tag)}</span><span>${escapeHtml(item.date)}</span><span>·</span><span>${escapeHtml(item.author || "Equipo docente")}</span></div><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.body)}</p></article>`).join("")}</div></section>`;
+      state.noticesRead = true;
+      document.getElementById("notificationDot").hidden = true;
+    }
+    function renderCommunity() {
+      const posts = [...state.forumPosts, ...forums];
+      content.innerHTML = `${welcome("Comunidad académica", state.role === "teacher" ? "Comparte información y acompaña las conversaciones de tus cursos." : "Espacios de conversación para resolver dudas y compartir ideas.", "Comunicación")}<div class="teacher-note">Los foros son una funcionalidad considerada para el proyecto. Este espacio es una muestra interactiva; sus normas y moderación deben acordarse con la institución.</div><section class="panel page-panel"><div class="panel-head"><div><div class="panel-title">Conversaciones de tus asignaturas</div><div class="panel-subtitle">Participa respetuosamente y mantén tus consultas relacionadas con el curso.</div></div><button class="button-primary" data-action="new-post">＋ Nueva conversación</button></div><div class="forum-list">${posts.map(post => `<article class="forum-card"><strong>${escapeHtml(post.title)}</strong><p>${escapeHtml(post.text)}</p><small>${escapeHtml(post.author)} &nbsp;·&nbsp; ${post.replies} respuestas</small></article>`).join("")}</div></section>`;
+    }
+    function toast(message) {
+      const element = document.getElementById("toast");
+      element.textContent = message;
+      element.classList.add("show");
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => element.classList.remove("show"), 2600);
+    }
+    function openModal(title, description, fields, submitLabel, onSubmit) {
+      const root = document.getElementById("modalRoot");
+      root.innerHTML = `<div class="modal-backdrop" data-action="close-modal"><form class="modal" id="dialogForm"><h2>${escapeHtml(title)}</h2><p>${escapeHtml(description)}</p>${fields}<div class="modal-actions"><button type="button" class="button-secondary" data-action="close-modal">Cancelar</button><button type="submit" class="button-primary">${escapeHtml(submitLabel)}</button></div></form></div>`;
+      root.querySelector("form").addEventListener("submit", event => {
+        event.preventDefault();
+        const values = Object.fromEntries(new FormData(event.currentTarget).entries());
+        if (onSubmit(values)) root.innerHTML = "";
+      });
+      root.querySelector(".modal-backdrop").addEventListener("click", event => {
+        if (event.target.classList.contains("modal-backdrop") || event.target.closest('[data-action="close-modal"]')) root.innerHTML = "";
+      });
+      const first = root.querySelector("input, textarea, select");
+      if (first) first.focus();
+    }
+    function requestReview(index) {
+      const item = grades[index];
+      if (!item || item.status === "Pendiente") { toast("Esta calificación aún no está publicada."); return; }
+      openModal("Consultar una calificación", `Deja una observación sobre “${item.item}” en ${item.subject}. Esta solicitud es una demostración y no se enviará al instituto.`, `<label for="reviewText">Tu observación</label><textarea id="reviewText" name="text" required maxlength="500" placeholder="Describe brevemente qué te gustaría que revisaran…"></textarea>`, "Enviar observación", values => {
+        state.reviews.unshift({ subject: item.subject, text: values.text.trim(), date: "12 oct 2026" });
+        state.page = "calificaciones";
+        render();
+        toast("Observación guardada en este prototipo.");
+        return true;
+      });
+    }
+    function createNotice() {
+      openModal("Publicar un aviso", "El aviso se agregará únicamente a esta demostración local.", `<label for="noticeTitle">Título</label><input id="noticeTitle" name="title" required maxlength="90" placeholder="Ej. Cambio de sala para la clase"><label for="noticeType">Tipo de aviso</label><select id="noticeType" name="tag"><option>Aviso general</option><option>Cambio de sala</option><option>Evaluación</option><option>Actividad</option></select><label for="noticeBody">Mensaje</label><textarea id="noticeBody" name="body" required maxlength="500" placeholder="Escribe la información para tus estudiantes…"></textarea>`, "Publicar aviso", values => {
+        state.teacherNotices = state.teacherNotices || [];
+        state.teacherNotices.unshift({ title: values.title.trim(), tag: values.tag, body: values.body.trim(), date: "Ahora", author: fullName() });
+        state.page = "avisos";
+        render();
+        toast("Aviso añadido a la demostración.");
+        return true;
+      });
+    }
+    function createPost() {
+      openModal("Nueva conversación", "Comparte una pregunta o tema relacionado con tus asignaturas.", `<label for="postTitle">Tema</label><input id="postTitle" name="title" required maxlength="90" placeholder="¿Sobre qué quieres conversar?"><label for="postBody">Mensaje</label><textarea id="postBody" name="text" required maxlength="500" placeholder="Escribe tu mensaje…"></textarea>`, "Publicar", values => {
+        state.forumPosts.unshift({ title: values.title.trim(), text: values.text.trim(), author: `${fullName()} · ${state.role === "teacher" ? "Docente" : "Estudiante"}`, replies: 0 });
+        render();
+        toast("Conversación añadida a la demostración.");
+        return true;
+      });
+    }
+    function editGrade() {
+      openModal("Registrar calificación", "Esta acción solo actualiza la vista de demostración.", `<label for="gradeStudent">Estudiante</label><select id="gradeStudent" name="student"><option>Camila Muñoz · 3° B</option><option>Diego Fuentes · 3° B</option></select><label for="gradeItem">Evaluación</label><input id="gradeItem" name="item" required value="Control 2 · Álgebra"><label for="gradeValue">Calificación (1,0 a 7,0)</label><input id="gradeValue" name="grade" required type="number" min="1" max="7" step="0.1" placeholder="6,0">`, "Guardar nota", values => {
+        toast(`Calificación de ${values.student.split(" · ")[0]} registrada en la demostración.`);
+        return true;
+      });
+    }
+    document.getElementById("navigation").addEventListener("click", event => {
+      const button = event.target.closest("[data-page]");
+      if (!button) return;
+      state.page = button.dataset.page;
+      if (state.page === "avisos") state.noticesRead = true;
+      render();
+    });
+    content.addEventListener("click", event => {
+      const pageButton = event.target.closest("[data-page-link]");
+      if (pageButton) { state.page = pageButton.dataset.pageLink; render(); return; }
+      const action = event.target.closest("[data-action]");
+      if (!action) return;
+      if (action.dataset.action === "go-notices") { state.page = "avisos"; state.noticesRead = true; render(); }
+      if (action.dataset.action === "request-review") requestReview(Number(action.dataset.index));
+      if (action.dataset.action === "new-notice") createNotice();
+      if (action.dataset.action === "new-post") createPost();
+      if (action.dataset.action === "new-grade" || action.dataset.action === "edit-grade") editGrade();
+      if (action.dataset.action === "schedule-week") toast("Mostrando la semana actual de demostración.");
+    });
+    content.addEventListener("input", event => {
+      if (event.target.id === "scheduleSearch") {
+        const query = event.target.value.toLocaleLowerCase("es");
+        const filtered = classes.filter(item => `${item.name} ${item.teacher} ${item.room}`.toLocaleLowerCase("es").includes(query));
+        document.getElementById("scheduleResults").innerHTML = classMarkup(filtered);
+      }
+      if (event.target.id === "gradeSearch") {
+        const query = event.target.value.toLocaleLowerCase("es");
+        const filtered = grades.filter(item => `${item.subject} ${item.item} ${item.status}`.toLocaleLowerCase("es").includes(query));
+        document.querySelector("#gradeTableBody").innerHTML = gradeRows(filtered);
+      }
+    });
+    document.getElementById("notificationButton").addEventListener("click", () => {
+      state.noticesRead = true;
+      render();
+      toast("Avisos marcados como leídos.");
+    });
+    document.getElementById("menuButton").addEventListener("click", () => document.getElementById("sidebar").classList.toggle("open"));
+    render();
+  </script>
+</body>
+</html>
